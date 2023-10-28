@@ -1,0 +1,96 @@
+#!/usr/bin/env python3
+# pylint: disable=invalid-name
+"""Extract semantic versioning information to generate the commit message prefix."""
+from __future__ import annotations
+
+import re
+import sys
+from pathlib import Path
+from subprocess import check_output
+
+cwd = Path.cwd()
+
+
+class PrefixHandler:
+    branch: str
+    branch_type: str = ""
+    fname: Path
+    issue: str = ""
+    owner: str = ""
+    prefix: str = ""
+    repo: str = ""
+
+    def __init__(self, branch: str, fname: str | Path) -> None:
+        self.branch = branch
+        self.fname = Path(fname)
+
+        self.repo = cwd.name
+        self.owner = cwd.parent.name
+
+        components = self.split(branch)
+        if len(components) == 1:
+            return
+
+        self.branch_type = components[0]
+        if len(components) > 2:
+            self.issue = self.parse_issue(self.owner, self.repo, components[1])
+
+        self.prefix = self.get()
+
+    def get(self) -> str:
+        """Get the full prefix for the commit message."""
+        if not self.branch_type:
+            return ""
+
+        if re.match(r"^(bug|fix)", self.branch_type):
+            prefix = "fix"
+        elif re.match(r"^feat", self.branch_type):
+            prefix = "feat"
+        else:
+            prefix = self.branch_type
+
+        if self.issue:
+            return f"{prefix}({self.issue}): "
+
+        return f"{prefix}: "
+
+    @staticmethod
+    def parse_issue(owner: str, repo: str, issue: str) -> str:
+        """Parse the issue number from the branch name."""
+        if issue.isnumeric():
+            return f"{owner}/{repo}#{issue}"
+        return issue.upper()
+
+    @classmethod
+    def init(cls) -> PrefixHandler:
+        """Create a new `PrefixParser` object."""
+        branch = (
+            check_output("git --no-pager symbolic-ref --short HEAD".split(" "))
+            .decode("utf-8")
+            .strip()
+        )
+        fname = sys.argv[1]
+        return cls(branch, fname)
+
+    @staticmethod
+    def split(branch: str) -> list[str]:
+        """Split the branch name into its components, using either `/` or `-` as the delimeter."""
+        if "/" in branch:
+            return branch.split("/")
+        return branch.split("-")
+
+    def write(self) -> None:
+        """Write the prefix to the commit message file."""
+        if not self.prefix:
+            return
+
+        with open(self.fname, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        with open(self.fname, "w", encoding="utf-8") as f:
+            f.write("\n".join((self.prefix, content)))
+
+
+if __name__ == "__main__":
+    handler = PrefixHandler.init()
+    handler.write()
