@@ -3,15 +3,20 @@
 """Extract semantic versioning information to generate the commit message prefix."""
 from __future__ import annotations
 
+import os
 import re
 import sys
 from pathlib import Path
 from subprocess import check_output
 
+SKIP_OWNER_NAME = os.getenv("GIT_SKIP_OWNER_NAME") or os.getenv("SKIP_OWNER_NAME")
+
 cwd = Path.cwd()
 
 
 class PrefixHandler:
+    """Handler class for extracting the commit message prefix from the branch name."""
+
     branch: str
     branch_type: str = ""
     fname: Path
@@ -58,7 +63,7 @@ class PrefixHandler:
     def parse_issue(owner: str, repo: str, issue: str) -> str:
         """Parse the issue number from the branch name."""
         if issue.isnumeric():
-            return f"{owner}/{repo}#{issue}"
+            return f"{owner}/{repo}#{issue}" if not SKIP_OWNER_NAME else f"#{issue}"
         return issue.upper()
 
     @classmethod
@@ -74,7 +79,7 @@ class PrefixHandler:
 
     @staticmethod
     def split(branch: str) -> list[str]:
-        """Split the branch name into its components, using either `/` or `-` as the delimeter."""
+        """Split the branch name into its components, using either `/` or `-` as the delimiter."""
         if "/" in branch:
             return branch.split("/")
         return branch.split("-")
