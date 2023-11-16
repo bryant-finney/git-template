@@ -7,7 +7,7 @@ import os
 import re
 import sys
 from pathlib import Path
-from subprocess import check_output
+from subprocess import check_output, CalledProcessError
 
 SKIP_OWNER_NAME = os.getenv("GIT_SKIP_OWNER_NAME") or os.getenv("SKIP_OWNER_NAME")
 
@@ -97,5 +97,9 @@ class PrefixHandler:
 
 
 if __name__ == "__main__":
-    handler = PrefixHandler.init()
-    handler.write()
+    try:
+        handler = PrefixHandler.init()
+    except CalledProcessError as exc:
+        print(exc)
+    else:
+        handler.write()
