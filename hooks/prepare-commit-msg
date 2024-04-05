@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 # pylint: disable=invalid-name
 """Extract semantic versioning information to generate the commit message prefix."""
+
 from __future__ import annotations
 
 import os
 import re
 import sys
 from pathlib import Path
-from subprocess import check_output, CalledProcessError
+from subprocess import CalledProcessError, check_output
 
 SKIP_OWNER_NAME = os.getenv("GIT_SKIP_OWNER_NAME") or os.getenv("SKIP_OWNER_NAME")
 
@@ -34,10 +35,10 @@ class PrefixHandler:
 
         components = self.split(branch)
         if len(components) == 1:
-            return
+            self.issue = self.parse_issue(self.owner, self.repo, components[0])
 
-        self.branch_type = components[0]
-        if len(components) > 2:
+        elif len(components) > 1:
+            self.branch_type = components[0]
             self.issue = self.parse_issue(self.owner, self.repo, components[1])
 
         self.prefix = self.get()
@@ -45,7 +46,7 @@ class PrefixHandler:
     def get(self) -> str:
         """Get the full prefix for the commit message."""
         if not self.branch_type:
-            return ""
+            return f"{self.issue}: " if self.issue else ""
 
         if re.match(r"^(bug|fix)", self.branch_type):
             prefix = "fix"
@@ -82,6 +83,8 @@ class PrefixHandler:
         """Split the branch name into its components, using either `/` or `-` as the delimiter."""
         if "/" in branch:
             return branch.split("/")
+        if re.match(r"^[A-Z]{2,}-\d+$", branch):
+            return [branch]
         return branch.split("-")
 
     def write(self) -> None:
