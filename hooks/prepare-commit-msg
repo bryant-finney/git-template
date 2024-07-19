@@ -7,12 +7,22 @@ from __future__ import annotations
 import os
 import re
 import sys
+from http import client
 from pathlib import Path
 from subprocess import CalledProcessError, check_output
 
 SKIP_OWNER_NAME = os.getenv("GIT_SKIP_OWNER_NAME") or os.getenv("SKIP_OWNER_NAME")
 
 cwd = Path.cwd()
+
+
+def get_default_commit_message() -> str:
+    """Get a default commit message."""
+    conn = client.HTTPSConnection("whatthecommit.com")
+    conn.request("GET", "/index.txt")
+    response = conn.getresponse().read().decode("utf-8").strip()
+    conn.close()
+    return response
 
 
 class PrefixHandler:
@@ -95,8 +105,11 @@ class PrefixHandler:
         with open(self.fname, "r", encoding="utf-8") as f:
             content = f.read()
 
+        if content.startswith("\n"):
+            content = get_default_commit_message() + content
+
         with open(self.fname, "w", encoding="utf-8") as f:
-            f.write("\n".join((self.prefix, content)))
+            f.write("".join((self.prefix, content)))
 
 
 if __name__ == "__main__":
