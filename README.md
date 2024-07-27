@@ -32,6 +32,14 @@ $ ls -1 .git/hooks | grep -v sample
 prepare-commit-msg
 ```
 
+### Update Existing Repos
+
+Run the following snippet to add these hooks to the current repo:
+
+```sh
+cp ~/.git_template/hooks/* ./.git/hooks/
+```
+
 ## Hooks
 
 ### [`prepare-commit-msg`](hooks/prepare-commit-msg)
