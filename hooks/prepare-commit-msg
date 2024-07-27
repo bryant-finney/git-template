@@ -105,7 +105,7 @@ class PrefixHandler:
         with open(self.fname, "r", encoding="utf-8") as f:
             content = f.read()
 
-        if content.startswith("\n"):
+        if content.startswith("\n") or not content:
             content = get_default_commit_message() + content
 
         with open(self.fname, "w", encoding="utf-8") as f:
